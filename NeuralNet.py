@@ -5,6 +5,7 @@ import warnings
 from keras.datasets import mnist
 warnings.filterwarnings('ignore')
 
+#Global functions for different activation functions and their derivatives
 def sigmoid(x): return 1 / (1 + np.exp(-x))
 def sigmoid_prime(x): return x * (1 - x)
 def error(output_activations, output_true): return 0.5 * np.square(output_activations-output_true)
@@ -23,7 +24,8 @@ class Network():
         self.layers = []
         for i in range(1,len(layer_sizes)):
             self.layers.append(Layer(layer_sizes[i-1], layer_sizes[i]))
-        
+        #Add layers using the size of that layer and the previous layer
+
     def forwardpropagate(self, inputs):
         for layer in self.layers:
             inputs = layer.forward_step(inputs)
@@ -31,11 +33,14 @@ class Network():
 
     def backpropagate(self, inputs, target, learning_rate):
         output = self.forwardpropagate(inputs)
+        #Calculate the deltas for the output layer 
         self.layers[-1].deltas = (self.layers[-1].activations - target) * sigmoid_prime(self.layers[-1].activations)
+        #Calculate deltas for hidden layers in reverse order
         for i in range(len(self.layers)-2, -1,-1):
             layer = self.layers[i]
             next_layer = self.layers[i + 1]
             layer.deltas = np.dot(next_layer.deltas, next_layer.weights.T) * sigmoid_prime(layer.activations)
+        #Apply gradient Descent to each layer
         for i in range(len(self.layers)-1, 0,-1):
             self.layers[i].apply_gradient(self.layers[i - 1].activations, learning_rate)
         self.layers[0].apply_gradient(inputs, learning_rate) 
@@ -47,11 +52,13 @@ class Network():
         start_time = time.time()
         for i in range(iterations):
             iteration_error = 0
+            #Apply backpropagation to each input and sum the error
             for j in range(len(inputs)):
                 outputs = self.backpropagate(inputs[j], target_outputs[j], learning_rate)
                 iteration_error += np.sum(error(target_outputs[j],outputs))
             iteration_error /= len(inputs)
             self.error.append(iteration_error)
+            #Print the progress of the training
             if i != iterations - 1:
                 print(f"Progress: [{i} / {iterations}] error: {iteration_error:.5e} ", end="\r", flush=True)
             else:
